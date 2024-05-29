@@ -12,6 +12,9 @@
                         "interface": {
                             "type": "string"
                         },
+                        "public_interface": {
+                            "type": "string"
+                        },
                         "private_ip": {
                             "type": "string"
                         },

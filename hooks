@@ -97,7 +97,8 @@ def json_minify(string, strip_space=True):
                 new_str.append(' ' * len(val))
 
     new_str.append(string[index:])
-    return ''.join(new_str)
+    new_str = ''.join(new_str)
+    return new_str
 
 
 def host_ip():
@@ -117,15 +118,32 @@ def host_ip():
             cmd, shell=True).decode().strip()
     return host_ip._host_ip.split('\n')[0]
 
-def host_ipv6():
+def host_ipv6(devname=None):
     """Returns the default route interface IPv6 (if any).
     
     Modified from host_ip() to return the IPv6 address of the default route
+
+    *** THIS FUNCTION IS BUGGY ***
+    `ip -6 route | grep default | cut -d' ' -f5 | head -n1` do no always return the correct device name
+    for example, `ip -6 route` may return:
+    ```
+    ...
+    default proto ra metric 100 pref medium
+        nexthop via fe80::9e3a:9aff:fe97:6882 dev enp6s0 weight 1
+        nexthop via fe80::6aed:34ff:fe13:a2c9 dev enp6s0 weight 1
+    ```
+    in this case, the correct device name is `enp6s0`, but the command above will return `100`
+    and the function will return the wrong empty IPv6 address.
+
+    So add devname parameter to specify the device name to get the IPv6 address
     """
     if not hasattr(host_ipv6, "_host_ipv6"):
-        cmd = "ip -6 route | grep default | cut -d' ' -f5 | head -n1"
-        default_route_interface = subprocess.check_output(
-            cmd, shell=True).decode().strip()
+        if not devname:
+            cmd = "ip -6 route | grep default | cut -d' ' -f5 | head -n1"
+            default_route_interface = subprocess.check_output(
+                cmd, shell=True).decode().strip()
+        else:
+            default_route_interface = devname
         cmd = "ip addr show {0} | grep -E 'inet6 .*global' | cut -d' ' -f6 | cut -d'/' -f1".format(
             default_route_interface)
         host_ipv6._host_ipv6 = subprocess.check_output(
@@ -360,7 +378,7 @@ def handle_domain(action, domain, vir_domain):
     private_ip = domain["private_ip"]
     source_ip = domain.get("source_ip")
 
-    public_ipv6 = domain.get("public_ipv6", host_ipv6())
+    public_ipv6 = domain.get("public_ipv6", host_ipv6(devname=domain.get("public_interface")))
     private_ipv6 = domain["private_ipv6"]
     source_ipv6 = domain.get("source_ipv6")
 
