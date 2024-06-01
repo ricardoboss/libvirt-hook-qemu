@@ -41,7 +41,7 @@ IPTABLES_BINARY = os.getenv('IPTABLES_BINARY') or subprocess.check_output([
 
 # Allow comments in json, copied from https://github.com/getify/JSON.minify
 def json_minify(string, strip_space=True):
-    tokenizer = re.compile('"|(/\*)|(\*/)|(//)|\n|\r')
+    tokenizer = re.compile(r'"|(/\*)|(\*/)|(//)|\n|\r')
     end_slashes_re = re.compile(r'(\\)*$')
 
     in_string = False
@@ -64,11 +64,12 @@ def json_minify(string, strip_space=True):
             # the correct column numbers on parsing errors.
             new_str.append(' ' * (match.start() - index))
 
+        last_index = index
         index = match.end()
         val = match.group()
 
         if val == '"' and not (in_multi or in_single):
-            escaped = end_slashes_re.search(string, 0, match.start())
+            escaped = end_slashes_re.search(string, last_index, match.start())
 
             # start of string or unescaped quote character to end string
             if not in_string or (escaped is None or len(escaped.group()) % 2 == 0):  # noqa
