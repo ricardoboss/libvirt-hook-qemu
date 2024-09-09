@@ -102,7 +102,7 @@ def json_minify(string, strip_space=True):
     return new_str
 
 
-def host_ip():
+def host_ip(devname=None):
     """Returns the default route interface IP (if any).
 
     In other words, the public IP used to access the virtualization host. It
@@ -110,9 +110,12 @@ def host_ip():
     specify a different public IP to forward from.
     """
     if not hasattr(host_ip, "_host_ip"):
-        cmd = "ip route | grep default | cut -d' ' -f5 | head -n1"
-        default_route_interface = subprocess.check_output(
-            cmd, shell=True).decode().strip()
+        if not devname:
+            cmd = "ip -6 route | grep default | cut -d' ' -f5 | head -n1"
+            default_route_interface = subprocess.check_output(
+                cmd, shell=True).decode().strip()
+        else:
+            default_route_interface = devname
         cmd = "ip addr show {0} | grep -E 'inet .*{0}' | cut -d' ' -f6 | cut -d'/' -f1".format(
             default_route_interface)
         host_ip._host_ip = subprocess.check_output(
@@ -377,7 +380,7 @@ def handle_domain(action, domain, vir_domain):
     dnat_chain = "DNAT-{0}".format(vir_domain)
     snat_chain = "SNAT-{0}".format(vir_domain)
     fwd_chain = "FWD-{0}".format(vir_domain)
-    public_ip = domain.get("public_ip", host_ip())
+    public_ip = domain.get("public_ip", host_ip(devname=domain.get("public_interface")))
     private_ip = domain["private_ip"]
     source_ip = domain.get("source_ip")
 
